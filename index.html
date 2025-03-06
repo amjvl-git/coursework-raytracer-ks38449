@@ -27,26 +27,50 @@ class Vec3
     }
 
     // Subtract other vector from this one and return the result
-    minus(other){}
+    minus(other){
+        return new Vec3(this.x - other.x, this.y - other.y, this.z - other.z)
+    }
 
     // Multiply other vector by this one and return the result
-    multiply(other){}
+    multiply(other){
+        return new Vec3(this.x * other.x, this.y * other.y, this.z * other.z)
+    }
 
     // Scale this vector by the number scalar and return the result
-    scale(scalar){}
+    scale(scalar){
+        return new Vec3(this.x * scalar, this.y * scalar, this.z * scalar)
+    }
     
     // Calculate the dot product of this vector with the other and return the result
-    dot(other) {}
+    dot(other) {
+
+    }
 
     // Calculate and return the magnitude of this vector
-    magnitude() {}
+    magnitude() {
+        pythagoras = ((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
+        return new Vec3(Math.sqrt(pythagoras))
+    }
     
     // Calculate and return the magnitude of this vector without the square root
-    magnitudeSquared() {}
+    magnitudeSquared() {
+        return new Vec3((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
+    }
 
     // Return a normalised version of this vector
-    normalised() {}
+    normalised() {
+        pythagoras = ((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
+        divide = 1 / pythagoras
+        return new Vec3(this.x * divide, this.y * divide, this.z * divide)
+    }
 }
+
+let x = parseFloat(prompt("Enter the value for x:"));
+let y = parseFloat(prompt("Enter the value for y:"));
+let z = parseFloat(prompt("Enter the value for z:"));
+
+let vector = new Vec3(x, y, z);
+
 
 // A sphere in 3D space. Has centre, radius and colour all of which are Vec3s
 class Sphere
