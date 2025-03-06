@@ -61,7 +61,7 @@ class Vec3
     normalised() {
         pythagoras = ((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
         divide = 1 / pythagoras
-        return new Vec3(this.x * divide, this.y * divide, this.z * divide)
+        return new Vec3(divide)
     }
 }
 let x = parseFloat(prompt("Enter the value for x:"));
