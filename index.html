@@ -54,21 +54,18 @@ class Vec3
     
     // Calculate and return the magnitude of this vector without the square root
     magnitudeSquared() {
-        return new Vec3((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
+        return (this.x * this.x) + (this.y * this.y) + (this.z * this.z)
     }
 
     // Return a normalised version of this vector
     normalised() {
-        pythagoras = ((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
-        divide = 1 / pythagoras
-        return new Vec3(divide)
+    let magnitude = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+    return new Vec3(this.x / magnitude, this.y / magnitude, this.z / magnitude);
     }
-}
-let x = parseFloat(prompt("Enter the value for x:"));
-let y = parseFloat(prompt("Enter the value for y:"));
-let z = parseFloat(prompt("Enter the value for z:"));
 
-let vector = new Vec3(x, y, z);
+}
+const v1 = new Vec3(1, 2, 3)
+const v2 = new Vec3(4, 5, 6)
 
 
 // A sphere in 3D space. Has centre, radius and colour all of which are Vec3s
@@ -89,11 +86,31 @@ class Sphere
         let a = ray.direction.dot(ray.direction)
         let b = 2 * ray.direction.dot(ray.origin.minus(this.centre))
         let c = (ray.origin.minus(this.centre)).magnitudeSquared() - (this.radius * this.radius)
-        let discriminant = (b * b) - (4 * a * c)
-        if(discriminant < 0) return -1
-        let t = (-b - Math.sqrt(discriminant)) / (2 * a)
-        if(t < 0) return -1
-        else return t
+        let discriminant = (b ** 2) - (4 * a * c)
+
+        // let t = (-b - Math.sqrt(discriminant)) / (2 * a)
+        // if (t < 0) {
+        //     return -1
+        // }
+        // if(discriminant > 0) {
+        //     return t}
+        // else return -1
+        if (discriminant < 0) {
+            return -1;
+        }
+        let t1 = (-b - Math.sqrt(discriminant)) / (2 * a);
+        let t2 = (-b + Math.sqrt(discriminant)) / (2 * a);
+
+
+        if (t1 > 0 && t2 > 0) {
+            return Math.min(t1, t2);
+        } else if (t1 > 0) {
+            return t1;
+        } else if (t2 > 0) {
+            return t2;
+        }
+
+    return -1;
     }
 }
 
@@ -103,7 +120,7 @@ class Ray
     constructor (origin, direction)
     {
         this.origin = origin
-        this.direction = direction
+        this.direction = direction.normalised();
     }
 
     // Calculate and return the point in space (a Vec3) for this ray for the given value of t
@@ -130,7 +147,10 @@ class RayCastResult
 
 // Calculate the intersection point and normal when a ray hits a sphere. Returns a RayCastResult.
 function hit(ray, t, sphereIndex) {
-    return new RayCastResult(intersectionPoint, intersectionNormal, t, sphereIndex)
+    // return new RayCastResult(intersectionPoint, intersectionNormal, t, sphereIndex)
+    let intersectionPoint = ray.origin.add(ray.direction.scale(t));
+    let intersectionNormal = intersectionPoint.minus(spheres[sphereIndex].centre).scale(1 / spheres[sphereIndex].radius);
+    return new RayCastResult(intersectionPoint, intersectionNormal, t, sphereIndex);
 }
 
 // Return a RayCastResult when a ray misses everything in the scene
@@ -140,39 +160,56 @@ function miss()
 }
 
 // Check whether a ray hits anything in the scene and return a RayCast Result
-function traceRay(ray)
-{
-    let sphere = spheres[0]
-    let t = sphere.rayIntersects(ray)
-    if(t < 0) return miss()
-    else return hit(ray, t, 0)
+function traceRay(ray) {
+    let closestT = Infinity;
+    let sphereIndex = -1;
+
+    for (let i = 0; i < spheres.length; i++) {
+        let t = spheres[i].rayIntersects(ray);
+        if (t > 0 && t < closestT) {
+            closestT = t;
+            sphereIndex = i;
+        }
+    }
+
+    if (sphereIndex === -1) {
+        return miss(); // No intersection
+    }
+
+    return hit(ray, closestT, sphereIndex);
 }
 
 // Calculate and return the background colour based on the ray
-function backgroundColour(ray)
-{
-    let white = new Vec3(1,1,1)
-    let blue = new Vec3(0.3,0.5,0.9)
-    t = 0.5 * (ray.direction.y + 1)
-    return new Vec3(0.3,0.5,0.9) // Blue
+function backgroundColour(ray) {
+    let white = new Vec3(1, 1, 1);
+    let blue = new Vec3(0.3, 0.5, 0.9);
+    let t = 0.5 * (ray.direction.y + 1.0); // Maps y to [0,1]
+    return white.scale(1 - t).add(blue.scale(t));
 }
 
+let lightDirection = new Vec3(-1.1, -1.3, -1.5).normalised();
+let negLightDirection = new Vec3(-lightDirection.x, -lightDirection.y, -lightDirection.z);
 // Returns the colour the ray should have as a Vec3 with RGB values in [0,1]
 function rayColour(ray) 
 {
-    let castResult = traceRay(ray)
-    if(castResult.t < 0) return backgroundColour(ray)
-    return new Vec3(1,0,0) // Red
+    let castResult = traceRay(ray);
+    if (castResult.t < 0) return backgroundColour(ray);
+
+    let albedo = spheres[castResult.sphereIndex].colour;
+    let diffuse = Math.max(castResult.normal.dot(negLightDirection), 0);
+    let colour = albedo.scale(diffuse);
+
+    return colour
 }
 
 // Sets a pixel at (x, y) in the canvas with an RGB Vec3
-function setPixel(x, y, colour)
-{
-    var c = document.getElementById("canvas")
-    var ctx = c.getContext("2d")
-    ctx.fillStyle = "rgba("+colour.x+","+colour.y+","+colour.z+","+1+")"
-    ctx.fillRect(x, c.height - y, 1, 1)
+function setPixel(x, y, colour) {
+    var c = document.getElementById("canvas");
+    var ctx = c.getContext("2d");
+    ctx.fillStyle = "rgba(" + Math.floor(colour.x) + "," + Math.floor(colour.y) + "," + Math.floor(colour.z) + ",1)";
+    ctx.fillRect(x, c.height - y, 1, 1);
 }
+
 
 const spheres = new Array(
     new Sphere(new Vec3(0,0,-1), 0.3, new Vec3(1,0,0)),       // Red sphere
@@ -184,11 +221,12 @@ const spheres = new Array(
 // Main code
 let imageWidth = document.getElementById("canvas").width
 let imageHeight = document.getElementById("canvas").height
-let aspectRatio = document.getElementById("canvas").height / document.getElementById("canvas").width
+let aspectRatio = imageHeight / imageWidth
 
-let viewportWidth = 2
-let viewportHeight = viewportWidth * aspectRatio
-let focalLength = 1
+let viewportWidth = 2;
+let viewportHeight = viewportWidth * aspectRatio;
+let focalLength = 1.0;
+
 
 let camPosition = new Vec3(0,0,0)
 let horizontal = new Vec3(viewportWidth, 0, 0)

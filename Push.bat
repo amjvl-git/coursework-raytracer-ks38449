@@ -1,4 +1,4 @@
 git status
 git add .
-git commit -m "pushed by .bat"
+git commit -m "Finsished"
 git push
