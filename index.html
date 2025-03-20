@@ -54,6 +54,11 @@ class Vec3
     return new Vec3(this.x / magnitude, this.y / magnitude, this.z / magnitude);
     }
 
+    reflect(normal) {
+    return this.minus(normal.scale(2 * this.dot(normal)));
+    }
+
+
 }
 const v1 = new Vec3(1, 2, 3)
 const v2 = new Vec3(4, 5, 6)
@@ -171,18 +176,44 @@ function rayColour(ray)
     if (castResult.t < 0) return backgroundColour(ray);
 
     let albedo = spheres[castResult.sphereIndex].colour;
-    let diffuse = Math.max(castResult.normal.dot(negLightDirection), 0);
-    let colour = albedo.scale(diffuse);
+    let diffuse = 0;
+    let specular = 0;
 
-    return colour
+    let shadowOrigin = castResult.position.add(castResult.normal.scale(0.001));
+    let shadowRay = new Ray(shadowOrigin, negLightDirection);
+    let shadowResult = traceRay(shadowRay);
+
+    if (shadowResult.t < 0) {
+        diffuse = Math.max(castResult.normal.dot(negLightDirection), 0);
+
+        let viewDirection = new Vec3(ray.direction.x, ray.direction.y, ray.direction.z);
+        let reflectionDirection = negLightDirection.reflect(castResult.normal);
+        specular = Math.pow(Math.max(viewDirection.dot(reflectionDirection), 0), 20);
+    }
+
+    let colour = albedo.scale(diffuse).add(new Vec3(1, 1, 1).scale(specular));
+    return colour;
+}
+
+
+function applyGammaCorrection(colour, gamma) {
+    return new Vec3(
+        Math.pow(colour.x / 255, 1 / gamma) * 255,
+        Math.pow(colour.y / 255, 1 / gamma) * 255,
+        Math.pow(colour.z / 255, 1 / gamma) * 255
+    );
 }
 
 function setPixel(x, y, colour) {
+    let gamma = 2.2; 
+    let correctedColour = applyGammaCorrection(colour, gamma);
+
     var c = document.getElementById("canvas");
     var ctx = c.getContext("2d");
-    ctx.fillStyle = "rgba(" + Math.floor(colour.x) + "," + Math.floor(colour.y) + "," + Math.floor(colour.z) + ",1)";
+    ctx.fillStyle = "rgba(" + Math.floor(correctedColour.x) + "," + Math.floor(correctedColour.y) + "," + Math.floor(correctedColour.z) + ",1)";
     ctx.fillRect(x, c.height - y, 1, 1);
 }
+
 
 const spheres = new Array(
     new Sphere(new Vec3(0,0,-1), 0.3, new Vec3(1,0,0)),       
@@ -208,18 +239,29 @@ let lowerLeftCorner = camPosition.minus(horizontal.scale(0.5)).minus(vertical.sc
 
 let colour = new Vec3(0,0,0)
 
-for (let i = 0; i < imageWidth; i++)
-{
-    for (let j = 0; j <= imageHeight; j++)
-    {
-        let u = i / (imageWidth-1)
-        let v = j / (imageHeight-1)
+let samplesPerPixel = 100;
 
-        let ray = new Ray(camPosition, lowerLeftCorner.add(horizontal.scale(u)).add(vertical.scale(v)).minus(camPosition))
-        colour = rayColour(ray).scale(255)
-        setPixel(i,j,colour)
+for (let i = 0; i < imageWidth; i++) {
+    for (let j = 0; j <= imageHeight; j++) {
+        let colour = new Vec3(0, 0, 0);
+
+        for (let s = 0; s < samplesPerPixel; s++) {
+            let u = (i + Math.random()) / (imageWidth - 1);
+            let v = (j + Math.random()) / (imageHeight - 1);
+
+            let ray = new Ray(
+                camPosition,
+                lowerLeftCorner.add(horizontal.scale(u)).add(vertical.scale(v)).minus(camPosition)
+            );
+
+            colour = colour.add(rayColour(ray));
+        }
+
+        colour = colour.scale(255 / samplesPerPixel);
+        setPixel(i, j, colour);
     }
 }
+
 
 </script>
 
