@@ -1,4 +1,4 @@
 git status
 git add .
-git commit -m "Added 6.1 advanced raytracing" 
+git commit -m "tidied up some code" 
 git push

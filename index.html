@@ -41,8 +41,7 @@ class Vec3
     }
 
     magnitude() {
-        pythagoras = ((this.x * this.x) + (this.y * this.y) + (this.z * this.z))
-        return new Vec3(Math.sqrt(pythagoras))
+        return new Vec3(Math.sqrt((this.x * this.x) + (this.y * this.y) + (this.z * this.z)))
     }
     
     magnitudeSquared() {
